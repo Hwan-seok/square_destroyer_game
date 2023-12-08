@@ -10,11 +10,7 @@ import 'package:square_destroyer/mixins/mixins.dart';
 import 'package:square_destroyer/square_destroyer_game.dart';
 
 class Ball extends CircleComponent
-    with
-        CollisionCallbacks,
-        HasGameReference<SquareDestroyerGame>,
-        Glowable,
-        Snapshot {
+    with CollisionCallbacks, HasGameReference<SquareDestroyerGame>, Glowable {
   static const RADIUS = 28.0;
   static const SPEED = 1000.0;
 

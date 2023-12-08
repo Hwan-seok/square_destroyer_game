@@ -42,11 +42,7 @@ class TargetGenerator {
 }
 
 class Target extends PolygonComponent
-    with
-        CollisionCallbacks,
-        Glowable,
-        HasGameReference<SquareDestroyerGame>,
-        Snapshot {
+    with CollisionCallbacks, Glowable, HasGameReference<SquareDestroyerGame> {
   static const MIN_ROTATE_TIME_IN_SECONDS = 1.0;
   static const MAX_ROTATE_TIME_IN_SECONDS = 2.0;
   static const ROTATE_RADIAN = 2 * pi;
@@ -86,7 +82,6 @@ class Target extends PolygonComponent
 
   @override
   Future<void> onLoad() {
-    renderSnapshot = true;
     add(RectangleHitbox(isSolid: true)..collisionType = CollisionType.passive);
     add(
       RotateEffect.by(
