@@ -2,41 +2,55 @@ import 'dart:math';
 
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
-import 'package:square_destroyer/consts/consts.dart';
+import 'package:square_destroyer/square_destroyer_game.dart';
 
-class ScoreBoard extends TextBoxComponent {
+class ScoreBoard extends TextBoxComponent
+    with HasGameReference<SquareDestroyerGame> {
+  static const SCORE_PER_MATCH = 100;
+  static const FONT_SIZE = 30.0;
+
+  int maximum = 0;
+  int score = 0;
+
   ScoreBoard()
       : super(
-          position: Vector2(30, 30),
-          textRenderer: TextPaint(
-            style: const TextStyle(
-              fontSize: AppConst.SCORE_FONT_SIZE,
-              color: Colors.white,
-            ),
+          anchor: Anchor.topLeft,
+          boxConfig: TextBoxConfig(
+            margins: EdgeInsets.zero,
+            maxWidth: 300,
           ),
         );
 
   @override
   void onMount() {
-    setText();
+    _setText();
     super.onMount();
   }
 
-  int maximum = 0;
-  int score = 0;
+  @override
+  void onGameResize(Vector2 size) {
+    textRenderer = TextPaint(
+      style: const TextStyle(
+        fontSize: FONT_SIZE,
+        color: Colors.white,
+      ),
+    );
+    scale = game.parameters.gameScale;
+    super.onGameResize(size);
+  }
 
-  void gain() {
-    score += AppConst.SCORE_PER_MATCH;
+  void hit() {
+    score += SCORE_PER_MATCH;
     maximum = max(maximum, score);
-    setText();
+    _setText();
   }
 
   void reset() {
     score = 0;
-    setText();
+    _setText();
   }
 
-  void setText() {
+  void _setText() {
     text = '''
 score: $score
 max: $maximum''';

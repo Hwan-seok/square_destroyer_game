@@ -5,13 +5,19 @@ import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart' hide Image, Gradient;
 import 'package:square_destroyer/components/target.dart';
-import 'package:square_destroyer/consts/consts.dart';
-import 'package:square_destroyer/mixins/mixins.dart';
 import 'package:square_destroyer/consts/priorities.dart';
+import 'package:square_destroyer/mixins/mixins.dart';
 import 'package:square_destroyer/square_destroyer_game.dart';
 
 class Ball extends CircleComponent
-    with CollisionCallbacks, HasGameReference<SquareDestroyerGame>, Glowable {
+    with
+        CollisionCallbacks,
+        HasGameReference<SquareDestroyerGame>,
+        Glowable,
+        Snapshot {
+  static const RADIUS = 28.0;
+  static const SPEED = 1000.0;
+
   final double shotRadian;
   final VoidCallback onHit;
 
@@ -20,7 +26,7 @@ class Ball extends CircleComponent
     required this.onHit,
     super.position,
   }) : super(
-          radius: AppConst.BALL_RADIUS,
+          radius: RADIUS,
           priority: Priorities.BALL.value,
           anchor: Anchor.center,
         );
@@ -44,9 +50,16 @@ class Ball extends CircleComponent
   }
 
   @override
+  void onGameResize(Vector2 size) {
+    scale = game.parameters.gameScale;
+    super.onGameResize(size);
+  }
+
+  @override
   void update(double dt) {
-    final dx = cos(shotRadian) * AppConst.BALL_SPEED;
-    final dy = sin(shotRadian) * AppConst.BALL_SPEED;
+    final factor = dt * SPEED * game.parameters.gameSizeFactor;
+    final dx = cos(shotRadian) * factor;
+    final dy = sin(shotRadian) * factor;
     position.setValues(position.x + dx, position.y + dy);
 
     if (isOutOfBounds) removeFromParent();

@@ -21,7 +21,7 @@ class ScoreResult extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                "You made it!\nScore: ${game.scoreBoard.score}",
+                "You made it!\nScore: ${game.hud.scoreBoard.score}",
                 style: Theme.of(context).textTheme.headlineMedium,
                 textAlign: TextAlign.center,
               ),

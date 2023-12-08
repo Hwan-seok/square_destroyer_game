@@ -2,12 +2,12 @@ import 'dart:math';
 
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart' hide Image, Gradient;
-import 'package:square_destroyer/mixins/mixins.dart';
 import 'package:square_destroyer/consts/priorities.dart';
+import 'package:square_destroyer/mixins/mixins.dart';
 import 'package:square_destroyer/square_destroyer_game.dart';
 
 class Cannon extends PolygonComponent
-    with HasGameReference<SquareDestroyerGame>, Glowable {
+    with HasGameReference<SquareDestroyerGame>, Glowable, Snapshot {
   Cannon()
       : super(
           [
@@ -36,8 +36,11 @@ class Cannon extends PolygonComponent
   void onGameResize(Vector2 size) {
     position = Vector2(
       game.camera.viewport.size.x / 2,
-      game.camera.viewport.size.y - super.size.y - 50,
+      game.camera.viewport.size.y -
+          super.size.y -
+          50 * game.parameters.gameSizeFactor,
     );
+    scale = Vector2.all(game.parameters.gameSizeFactor);
     super.onGameResize(size);
   }
 
@@ -48,7 +51,11 @@ class Cannon extends PolygonComponent
   }
 
   void rotate() {
-    if (game.keyHandler.isLeftPressed) angle = max(-pi, angle - pi / 40);
-    if (game.keyHandler.isRightPressed) angle = min(0, angle + pi / 40);
+    if (game.keyHandler.isLeftPressed || game.dragHandler.isLeftPressed) {
+      angle = max(-pi, angle - pi / 40);
+    } else if (game.keyHandler.isRightPressed ||
+        game.dragHandler.isRightPressed) {
+      angle = min(0, angle + pi / 40);
+    }
   }
 }

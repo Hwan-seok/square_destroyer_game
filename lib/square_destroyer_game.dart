@@ -1,37 +1,45 @@
 import 'dart:async';
 import 'dart:developer';
 
+import 'package:flame/components.dart';
+import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Image, Gradient;
 import 'package:flutter/services.dart';
+import 'package:square_destroyer/__experimental_inference/agent.dart';
 import 'package:square_destroyer/components/ball.dart';
 import 'package:square_destroyer/components/cannon.dart';
-import 'package:square_destroyer/components/score_board.dart';
+import 'package:square_destroyer/components/hud.dart';
 import 'package:square_destroyer/components/target.dart';
-import 'package:square_destroyer/components/timer_board.dart';
-import 'package:square_destroyer/__experimental_inference/agent.dart';
-import 'package:square_destroyer/utils/key_handler.dart';
 import 'package:square_destroyer/overlays/overlays.dart';
+import 'package:square_destroyer/utils/game_scaler.dart';
+import 'package:square_destroyer/utils/key_handler.dart';
+import 'package:square_destroyer/utils/tap_handler.dart';
 
 class SquareDestroyerGame extends FlameGame
-    with KeyboardEvents, HasCollisionDetection {
+    with KeyboardEvents, HasCollisionDetection, DragCallbacks, TapCallbacks {
   SquareDestroyerGame() : super();
 
+  final parameters = GameScaler();
+
   final keyHandler = KeyHandler();
+  final tapHandler = TapHandler();
+  final dragHandler = DragHandler();
+
   final targetGenerator = TargetGenerator();
 
   final cannon = Cannon();
-  late final ScoreBoard scoreBoard;
-  late final TimerBoard timeLeft;
 
+  late final hud = Hud(onTimeSet: onTimeSet);
   Ball? ball;
 
   @override
   bool get debugMode => false;
 
-  bool get shouldShootBall => keyHandler.isSpacePressed && ball == null;
+  bool get shouldShootBall =>
+      (keyHandler.isSpacePressed || tapHandler.isTapPressed) && ball == null;
 
   final agent = Agent.instance;
 
@@ -40,14 +48,10 @@ class SquareDestroyerGame extends FlameGame
   @override
   FutureOr<void> onLoad() async {
     add(cannon);
+    camera.viewport.add(hud);
     await agent.initialize();
-    camera.viewport.addAll([
-      scoreBoard = ScoreBoard(),
-      timeLeft = TimerBoard(
-        onTimeSet: onTimeSet,
-        position: Vector2(size.x - 30, 30),
-      )
-    ]);
+
+    add(FpsTextComponent());
 
     return super.onLoad();
   }
@@ -64,6 +68,25 @@ class SquareDestroyerGame extends FlameGame
   }
 
   @override
+  void onTapUp(TapUpEvent event) => tapHandler.handleTap();
+
+  @override
+  void onDragUpdate(DragUpdateEvent event) =>
+      dragHandler.handlerDragUpdate(event);
+
+  @override
+  void onDragCancel(DragCancelEvent event) {
+    dragHandler.handleDragEnd();
+    super.onDragCancel(event);
+  }
+
+  @override
+  void onDragEnd(DragEndEvent event) {
+    dragHandler.handleDragEnd();
+    super.onDragEnd(event);
+  }
+
+  @override
   void update(double dt) {
     if (shouldShootBall) shoot();
     if (targetGenerator.canGenerate) addTarget();
@@ -71,30 +94,36 @@ class SquareDestroyerGame extends FlameGame
     super.update(dt);
   }
 
+  @override
+  void onGameResize(Vector2 size) {
+    parameters.setFactor(size.x);
+    super.onGameResize(size);
+  }
+
   void shoot() {
+    tapHandler.removeTap();
     add(
       ball = Ball(
         position: cannon.position,
         shotRadian: cannon.angle,
-        onHit: onHit,
+        onHit: hud.hitScore,
       )..removed.then((_) => ball = null),
     );
   }
 
-  void onHit() => scoreBoard.gain();
-
   void addTarget() {
-    add(targetGenerator.generate(camera.viewport.size.x));
+    add(
+      targetGenerator.generate(
+        camera.viewport.size.x,
+      ),
+    );
   }
 
   void restart() {
     overlays.remove(OverlayKeys.SCORE_RESULT.name);
-    scoreBoard.reset();
 
-    camera.viewport.addAll([
-      scoreBoard,
-      timeLeft,
-    ]);
+    hud.resetScore();
+    camera.viewport.add(hud);
 
     resumeEngine();
   }
@@ -103,8 +132,7 @@ class SquareDestroyerGame extends FlameGame
     overlays.add(OverlayKeys.SCORE_RESULT.name);
 
     ball?.removeFromParent();
-    scoreBoard.removeFromParent();
-    timeLeft.removeFromParent();
+    hud.removeFromParent();
 
     pauseEngine();
   }

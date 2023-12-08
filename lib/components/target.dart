@@ -6,9 +6,8 @@ import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flutter/material.dart' hide Image, Gradient;
 import 'package:square_destroyer/components/ball.dart';
-import 'package:square_destroyer/consts/consts.dart';
-import 'package:square_destroyer/mixins/mixins.dart';
 import 'package:square_destroyer/consts/priorities.dart';
+import 'package:square_destroyer/mixins/mixins.dart';
 import 'package:square_destroyer/square_destroyer_game.dart';
 
 class TargetGenerator {
@@ -33,6 +32,7 @@ class TargetGenerator {
         0,
       ),
       shotRadian: rand.nextDouble() * pi,
+      size: Target.SIZE,
     );
     targets.add(target);
     target.removed.then((_) => targets.remove(target));
@@ -42,13 +42,24 @@ class TargetGenerator {
 }
 
 class Target extends PolygonComponent
-    with CollisionCallbacks, Glowable, HasGameReference<SquareDestroyerGame> {
+    with
+        CollisionCallbacks,
+        Glowable,
+        HasGameReference<SquareDestroyerGame>,
+        Snapshot {
+  static const MIN_ROTATE_TIME_IN_SECONDS = 1.0;
+  static const MAX_ROTATE_TIME_IN_SECONDS = 2.0;
+  static const ROTATE_RADIAN = 2 * pi;
+  static const DUMMY = .0;
+  static const SIZE = 50.0;
+  static const SPEED = 250.0;
+
   final double shotRadian;
 
   Target({
     required Vector2 initialPosition,
     required this.shotRadian,
-    double size = AppConst.TARGET_SIZE,
+    required double size,
   }) : super(
           [
             Vector2(0, 0),
@@ -68,22 +79,23 @@ class Target extends PolygonComponent
   Color get color => Colors.yellow;
 
   @override
-  int get blurFactor => 2;
+  int get blurFactor => 3;
 
   bool get isOutOfBounds =>
       x < 0 || y < 0 || x > game.size.x || y > game.size.y;
 
   @override
   Future<void> onLoad() {
-    add(RectangleHitbox(isSolid: true));
+    renderSnapshot = true;
+    add(RectangleHitbox(isSolid: true)..collisionType = CollisionType.passive);
     add(
       RotateEffect.by(
-        2 * pi,
+        ROTATE_RADIAN,
         InfiniteEffectController(
           RandomEffectController.uniform(
-            LinearEffectController(0),
-            min: 1,
-            max: 2,
+            LinearEffectController(DUMMY),
+            min: MIN_ROTATE_TIME_IN_SECONDS,
+            max: MAX_ROTATE_TIME_IN_SECONDS,
           ),
         ),
       ),
@@ -92,9 +104,16 @@ class Target extends PolygonComponent
   }
 
   @override
+  void onGameResize(Vector2 size) {
+    scale = game.parameters.gameScale;
+    super.onGameResize(size);
+  }
+
+  @override
   void update(double dt) {
-    final dx = cos(shotRadian) * AppConst.TARGET_SPEED;
-    final dy = sin(shotRadian) * AppConst.TARGET_SPEED;
+    final factor = dt * SPEED * game.parameters.gameSizeFactor;
+    final dx = cos(shotRadian) * factor;
+    final dy = sin(shotRadian) * factor;
     position.setValues(position.x + dx, position.y + dy);
 
     if (isOutOfBounds) removeFromParent();

@@ -23,11 +23,10 @@ dev_dependencies:
   flutter_lints: ^2.0.0
 
 flutter:
-  uses-material-design: true
+  uses-material-design: false
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/sprite_sheets/
     - assets/models/
 
   # An image asset can refer to one or more resolution-specific "variants", see
